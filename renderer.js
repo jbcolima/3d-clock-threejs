@@ -1,5 +1,8 @@
 // renderer.js
 import * as THREE from 'three';
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 const container = document.getElementById('canvas-container');
 
@@ -34,94 +37,100 @@ ground.position.y = -2.6;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// Create a canvas2D to draw time + date
-const canvas = document.createElement('canvas');
-// choose a texture size that keeps crisp text
-canvas.width = 2048;
-canvas.height = 512;
-const ctx = canvas.getContext('2d');
-
-function drawTimeToCanvas(date = new Date()) {
-  // Clear
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // background gradient
-  const g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  g.addColorStop(0, '#0f1724');
-  g.addColorStop(1, '#071126');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // build time + date strings
-  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const dateStr = date.toLocaleDateString([], { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-
-  // shadow + text styles
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  // Draw big time
-  ctx.font = 'bold 160px system-ui, -apple-system, "Segoe UI", Roboto';
-  ctx.fillStyle = '#e5f6ff';
-  ctx.shadowColor = 'rgba(0,0,0,0.6)';
-  ctx.shadowBlur = 30;
-  ctx.fillText(timeStr, canvas.width / 2, canvas.height / 2 - 30);
-
-  // Draw smaller date
-  ctx.font = '36px system-ui, -apple-system, "Segoe UI", Roboto';
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = '#cfeeff';
-  ctx.fillText(dateStr, canvas.width / 2, canvas.height / 2 + 80);
-
-  // small subtle gloss
-  const gloss = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gloss.addColorStop(0, 'rgba(255,255,255,0.06)');
-  gloss.addColorStop(0.5, 'rgba(255,255,255,0.02)');
-  gloss.addColorStop(1, 'rgba(255,255,255,0.00)');
-  ctx.fillStyle = gloss;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-// initial draw
-drawTimeToCanvas(new Date());
-
-// Create a texture from the canvas
-const texture = new THREE.CanvasTexture(canvas);
-texture.needsUpdate = true;
-texture.minFilter = THREE.LinearFilter;
-texture.magFilter = THREE.LinearFilter;
-texture.anisotropy = 4;
-
-// Create a slightly extruded-looking object: use a plane for the face and small box for the depth
-const planeGeo = new THREE.PlaneGeometry(6, 1.5);
-const planeMat = new THREE.MeshStandardMaterial({
-  map: texture,
-  metalness: 0.1,
-  roughness: 0.6,
-  side: THREE.FrontSide
-});
-const planeMesh = new THREE.Mesh(planeGeo, planeMat);
-planeMesh.castShadow = true;
-planeMesh.position.y = 0;
-scene.add(planeMesh);
-
-// Add a thin backing to emulate thickness (a thin box)
-const depth = 0.15;
-const backMat = new THREE.MeshStandardMaterial({ color: 0x071428, metalness: 0.2, roughness: 0.8 });
-const backGeo = new THREE.BoxGeometry(6, 1.5, depth);
-const backMesh = new THREE.Mesh(backGeo, backMat);
-backMesh.position.z = -depth/2 - 0.01;
-backMesh.castShadow = true;
-planeMesh.add(backMesh);
-
-// subtle bevel (a rounded edge look is harder without geometry libraries; this is a simple illusion)
-planeMesh.rotation.x = -0.05;
-planeMesh.rotation.y = 0.03;
-
-// Ambient fill for more 3D look
+// We'll render the time and date as real 3D extruded text using Helvetiker font
 const fillLight = new THREE.PointLight(0x88aaff, 0.6, 20);
 fillLight.position.set(-6, 2, 6);
 scene.add(fillLight);
+
+// OrbitControls for zoom/rotate/pan
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.screenSpacePanning = false;
+controls.minDistance = 2;
+controls.maxDistance = 30;
+
+// Font loading and text objects
+const loader = new FontLoader();
+let font = null;
+let timeMesh = null;
+let dateMesh = null;
+const textGroup = new THREE.Group();
+scene.add(textGroup);
+
+// Use bundled helvetiker_regular.typeface.json from three/examples - we assume node_modules is present
+loader.load('./node_modules/three/examples/fonts/helvetiker_regular.typeface.json', (fnt) => {
+  font = fnt;
+  createTextMeshes(new Date());
+});
+
+function createTextMeshes(date) {
+  // cleanup previous
+  if (timeMesh) {
+    timeMesh.geometry.dispose();
+    timeMesh.material.dispose();
+    textGroup.remove(timeMesh);
+    timeMesh = null;
+  }
+  if (dateMesh) {
+    dateMesh.geometry.dispose();
+    dateMesh.material.dispose();
+    textGroup.remove(dateMesh);
+    dateMesh = null;
+  }
+
+  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const dateStr = date.toLocaleDateString([], { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+
+  const textMaterial = new THREE.MeshStandardMaterial({ color: 0xe5f6ff, metalness: 0.1, roughness: 0.4 });
+  const dateMaterial = new THREE.MeshStandardMaterial({ color: 0xcfeeff, metalness: 0.05, roughness: 0.6 });
+
+  // time geometry (larger)
+  const timeGeo = new TextGeometry(timeStr, {
+    font: font,
+    size: 0.9,
+    height: 0.08,
+    curveSegments: 12,
+    bevelEnabled: true,
+    bevelThickness: 0.02,
+    bevelSize: 0.02,
+    bevelOffset: 0,
+    bevelSegments: 3
+  });
+  timeGeo.computeBoundingBox();
+  const timeWidth = timeGeo.boundingBox.max.x - timeGeo.boundingBox.min.x;
+  timeGeo.translate(-timeWidth / 2, 0.15, 0);
+  timeMesh = new THREE.Mesh(timeGeo, textMaterial);
+  timeMesh.castShadow = true;
+  timeMesh.receiveShadow = true;
+  textGroup.add(timeMesh);
+
+  // date geometry (smaller, below)
+  const dateGeo = new TextGeometry(dateStr, {
+    font: font,
+    size: 0.35,
+    height: 0.06,
+    curveSegments: 8,
+    bevelEnabled: true,
+    bevelThickness: 0.01,
+    bevelSize: 0.01,
+    bevelOffset: 0,
+    bevelSegments: 2
+  });
+  dateGeo.computeBoundingBox();
+  const dateWidth = dateGeo.boundingBox.max.x - dateGeo.boundingBox.min.x;
+  dateGeo.translate(-dateWidth / 2, -0.6, 0);
+  dateMesh = new THREE.Mesh(dateGeo, dateMaterial);
+  dateMesh.castShadow = true;
+  dateMesh.receiveShadow = true;
+  textGroup.add(dateMesh);
+
+  // subtle tilt to match previous aesthetic
+  timeMesh.rotation.x = -0.05;
+  timeMesh.rotation.y = 0.03;
+  dateMesh.rotation.x = -0.05;
+  dateMesh.rotation.y = 0.03;
+}
 
 let rotate = true;
 document.getElementById('toggle-rotate').addEventListener('click', () => rotate = !rotate);
@@ -135,15 +144,14 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// update loop: update canvas every second
+// update loop: recreate 3D text each second
 let lastSecond = -1;
 function updateClock() {
   const now = new Date();
   const sec = now.getSeconds();
   if (sec !== lastSecond) {
     lastSecond = sec;
-    drawTimeToCanvas(now);
-    texture.needsUpdate = true;
+    if (font) createTextMeshes(now);
   }
 }
 
@@ -155,9 +163,9 @@ function animate() {
 
   const t = clock.getElapsedTime();
   if (rotate) {
-    planeMesh.rotation.z = Math.sin(t * 0.3) * 0.08;
-    planeMesh.rotation.y = Math.sin(t * 0.15) * 0.12;
-    planeMesh.position.x = Math.sin(t * 0.12) * 0.08;
+    textGroup.rotation.z = Math.sin(t * 0.3) * 0.08;
+    textGroup.rotation.y = Math.sin(t * 0.15) * 0.12;
+    textGroup.position.x = Math.sin(t * 0.12) * 0.08;
   }
 
   // subtle camera bob
@@ -165,6 +173,7 @@ function animate() {
   camera.position.y = Math.sin(t * 0.05) * 0.06;
   camera.lookAt(0, 0, 0);
 
+  controls.update();
   renderer.render(scene, camera);
 }
 animate();

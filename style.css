@@ -27,6 +27,6 @@ html,body {
   box-shadow: 0 4px 16px rgba(0,0,0,0.6);
 }
 #ui button, #ui label {
-  color: #eee;
+  color: #000000;
   font-size: 13px;
 }

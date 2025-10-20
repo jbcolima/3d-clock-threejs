@@ -3,30 +3,188 @@ html,body {
   margin: 0;
   height: 100%;
   background: #111;
-  color: #ddd;
+  color: #000000;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
+
 #canvas-container {
   width: 100%;
   height: 100vh;
   overflow: hidden;
 }
 
-/* simple UI */
+/* Responsive UI Panel */
 #ui {
   position: absolute;
   z-index: 10;
   top: 12px;
   left: 12px;
-  gap: 8px;
   display: flex;
-  align-items: center;
-  background: rgba(18,18,18,0.6);
-  padding: 8px 10px;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(18,18,18,0.85);
+  padding: 16px;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  transform-origin: left top;
 }
-#ui button, #ui label {
+
+#ui.hidden {
+  opacity: 0;
+  transform: scale(0.98);
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+/* Range input styling */
+#ui input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  height: 6px;
+  outline: none;
+}
+
+#ui input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: none;
+}
+
+#ui input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  border: none;
+}
+
+#toggle-ui {
+  transition: all 0.3s ease;
+}
+
+#toggle-ui:hover {
+  background: rgba(28,28,28,0.95) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Controls layout and styling */
+#customize {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#customize > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Control group headers */
+#customize strong {
+  min-width: 80px;
+  color: #fff;
+  font-size: 14px;
+}
+
+/* Input styling */
+#ui button, 
+#ui select,
+#ui input[type="file"] {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.1);
   color: #000000;
   font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#ui button:hover,
+#ui select:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+#ui input[type="color"] {
+  width: 40px;
+  height: 24px;
+  padding: 0 2px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#ui input[type="file"] {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#ui label {
+  color: #ddd;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* Checkbox styling */
+#ui input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Media queries for responsive layout */
+@media (max-width: 640px) {
+  #ui {
+    left: 8px;
+    right: 8px;
+    max-width: calc(100vw - 16px);
+    padding: 12px;
+  }
+  
+  #customize strong {
+    min-width: 100%;
+    margin-bottom: 4px;
+  }
+  
+  #customize > div {
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+}
+
+/* Landscape mode on small screens */
+@media (max-height: 500px) and (orientation: landscape) {
+  #ui {
+    max-height: calc(100vh - 16px);
+    font-size: 12px;
+  }
+  
+  #customize {
+    gap: 8px;
+  }
+  
+  #customize > div {
+    gap: 8px;
+    padding-bottom: 4px;
+  }
 }

@@ -17,9 +17,46 @@
   </script>
 </head>
 <body>
+  <button id="toggle-ui" style="position:fixed;top:12px;right:12px;z-index:20;padding:8px 12px;background:rgba(18,18,18,0.85);color:#fff;border:none;border-radius:6px;cursor:pointer;backdrop-filter:blur(8px);">Hide UI</button>
   <div id="ui">
-    <button id="toggle-rotate">Toggle Rotate</button>
-    <label><input id="shadow" type="checkbox" checked> Soft Shadow</label>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button id="toggle-rotate">Toggle Rotate</button>
+      <label style="display:flex;align-items:center;gap:6px;margin-left:6px;"><input id="shadow" type="checkbox" checked> Soft Shadow</label>
+    </div>
+
+    <div id="customize" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <strong style="min-width:48px">Time</strong>
+        <label style="display:flex;align-items:center;gap:6px;">Color: <input id="time-color" type="color" value="#e5f6ff"></label>
+        <label style="display:flex;align-items:center;gap:6px;">Use texture: <input id="time-use-texture" type="checkbox"></label>
+        <input id="time-texture" type="file" accept="image/*">
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <strong style="min-width:48px">Date</strong>
+        <label style="display:flex;align-items:center;gap:6px;">Color: <input id="date-color" type="color" value="#cfeeff"></label>
+        <label style="display:flex;align-items:center;gap:6px;">Use texture: <input id="date-use-texture" type="checkbox"></label>
+        <input id="date-texture" type="file" accept="image/*">
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
+        <strong style="min-width:48px">Background</strong>
+        <label style="display:flex;align-items:center;gap:6px;">Color: <input id="bg-color" type="color" value="#080808"></label>
+        <label style="display:flex;align-items:center;gap:6px;">Use image: <input id="bg-use-image" type="checkbox"></label>
+        <input id="bg-image" type="file" accept="image/*">
+       <!--<label style="display:flex;align-items:center;gap:6px;">Opacity: <input id="bg-opacity" type="range" min="0" max="100" value="100" style="width:100px"></label> -->
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;">
+        <strong style="min-width:48px">Font</strong>
+        <select id="font-select">
+          <option value="helvetiker">Helvetiker (default)</option>
+          <option value="optimer">Optimer</option>
+          <option value="gentilis">Gentilis</option>
+          <option value="droid">Droid Sans</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <div id="canvas-container"></div>

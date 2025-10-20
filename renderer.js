@@ -55,6 +55,11 @@ const loader = new FontLoader();
 let font = null;
 let timeMesh = null;
 let dateMesh = null;
+// persistent materials so textures/colors persist across text recreations
+const timeMaterial = new THREE.MeshStandardMaterial({ color: 0xe5f6ff, metalness: 0.1, roughness: 0.4 });
+const dateMaterial = new THREE.MeshStandardMaterial({ color: 0xcfeeff, metalness: 0.05, roughness: 0.6 });
+let timeTexture = null;
+let dateTexture = null;
 const textGroup = new THREE.Group();
 scene.add(textGroup);
 
@@ -62,6 +67,193 @@ scene.add(textGroup);
 loader.load('./node_modules/three/examples/fonts/helvetiker_regular.typeface.json', (fnt) => {
   font = fnt;
   createTextMeshes(new Date());
+});
+
+// UI elements
+const timeColorInput = document.getElementById('time-color');
+const dateColorInput = document.getElementById('date-color');
+const timeTextureInput = document.getElementById('time-texture');
+const dateTextureInput = document.getElementById('date-texture');
+const timeUseTexture = document.getElementById('time-use-texture');
+const dateUseTexture = document.getElementById('date-use-texture');
+const bgColorInput = document.getElementById('bg-color');
+const bgImageInput = document.getElementById('bg-image');
+const bgUseImage = document.getElementById('bg-use-image');
+const bgOpacity = document.getElementById('bg-opacity');
+const fontSelect = document.getElementById('font-select');
+const uiPanel = document.getElementById('ui');
+
+// Add a button to toggle UI visibility if not present
+let toggleUI = document.getElementById('toggle-ui');
+if (!toggleUI && uiPanel) {
+  toggleUI = document.createElement('button');
+  toggleUI.id = 'toggle-ui';
+  toggleUI.textContent = 'Hide UI';
+  toggleUI.style.position = 'absolute';
+  toggleUI.style.top = '10px';
+  toggleUI.style.right = '10px';
+  toggleUI.style.zIndex = 1000;
+  document.body.appendChild(toggleUI);
+}
+if (toggleUI && uiPanel) {
+  toggleUI.addEventListener('click', () => {
+    const isHidden = uiPanel.classList.toggle('hidden');
+    toggleUI.textContent = isHidden ? 'Show UI' : 'Hide UI';
+  });
+}
+
+// helpers
+function applyTimeColor(hex) {
+  timeMaterial.map = null;
+  if (timeTexture) {
+    timeTexture.dispose();
+    timeTexture = null;
+  }
+  timeMaterial.color.set(hex);
+  timeMaterial.needsUpdate = true;
+}
+
+function applyDateColor(hex) {
+  dateMaterial.map = null;
+  if (dateTexture) {
+    dateTexture.dispose();
+    dateTexture = null;
+  }
+  dateMaterial.color.set(hex);
+  dateMaterial.needsUpdate = true;
+}
+
+function loadTextureFromFile(file, cb) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    const loader = new THREE.TextureLoader();
+    loader.load(dataUrl, (tex) => {
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      cb(null, tex);
+    }, undefined, (err) => cb(err));
+  };
+  reader.readAsDataURL(file);
+}
+
+// background handling
+let bgTexture = null;
+let currentBgColor = new THREE.Color(0x080808);
+let lastBgOpacity = 1;
+
+function applyBackgroundColor(hex) {
+  if (bgTexture) {
+    bgTexture.dispose();
+    bgTexture = null;
+  }
+  currentBgColor.set(hex);
+  scene.background = currentBgColor;
+}
+
+bgColorInput.addEventListener('input', (e) => {
+  applyBackgroundColor(e.target.value);
+});
+
+bgImageInput.addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  loadTextureFromFile(f, (err, tex) => {
+    if (err) return console.error('Background texture load failed', err);
+    if (bgTexture) bgTexture.dispose();
+    bgTexture = tex;
+    if (bgUseImage.checked) {
+      scene.background = bgTexture;
+    }
+  });
+});
+
+bgUseImage.addEventListener('change', (e) => {
+  if (e.target.checked && bgTexture) {
+    scene.background = bgTexture;
+  } else {
+    // fallback to color input
+    scene.background = new THREE.Color(bgColorInput.value);
+  }
+});
+
+// font selection
+const builtinFonts = {
+  helvetiker: './node_modules/three/examples/fonts/helvetiker_regular.typeface.json',
+  optimer: './node_modules/three/examples/fonts/optimer_regular.typeface.json',
+  gentilis: './node_modules/three/examples/fonts/gentilis_regular.typeface.json',
+  droid: './node_modules/three/examples/fonts/droid/droid_serif_regular.typeface.json'
+};
+
+function loadFontFromPath(path, cb) {
+  loader.load(path, (f) => cb(null, f), undefined, (err) => cb(err));
+}
+
+fontSelect.addEventListener('change', (e) => {
+  const key = e.target.value;
+  const path = builtinFonts[key];
+  if (!path) return;
+  loadFontFromPath(path, (err, f) => {
+    if (err) return console.error('Font load error', err);
+    font = f;
+    createTextMeshes(new Date());
+  });
+});
+
+timeColorInput.addEventListener('input', (e) => applyTimeColor(e.target.value));
+dateColorInput.addEventListener('input', (e) => applyDateColor(e.target.value));
+
+timeTextureInput.addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  loadTextureFromFile(f, (err, tex) => {
+    if (err) return console.error('Texture load failed', err);
+    if (timeTexture) timeTexture.dispose();
+    timeTexture = tex;
+    if (timeUseTexture.checked) {
+      timeMaterial.map = timeTexture;
+      timeMaterial.color.setHex(0xffffff);
+      timeMaterial.needsUpdate = true;
+    }
+  });
+});
+
+dateTextureInput.addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  loadTextureFromFile(f, (err, tex) => {
+    if (err) return console.error('Texture load failed', err);
+    if (dateTexture) dateTexture.dispose();
+    dateTexture = tex;
+    if (dateUseTexture.checked) {
+      dateMaterial.map = dateTexture;
+      dateMaterial.color.setHex(0xffffff);
+      dateMaterial.needsUpdate = true;
+    }
+  });
+});
+
+timeUseTexture.addEventListener('change', (e) => {
+  if (e.target.checked && timeTexture) {
+    timeMaterial.map = timeTexture;
+    timeMaterial.color.setHex(0xffffff);
+  } else {
+    timeMaterial.map = null;
+    // keep current color from color picker
+    timeMaterial.color.set(timeColorInput.value);
+  }
+  timeMaterial.needsUpdate = true;
+});
+
+dateUseTexture.addEventListener('change', (e) => {
+  if (e.target.checked && dateTexture) {
+    dateMaterial.map = dateTexture;
+    dateMaterial.color.setHex(0xffffff);
+  } else {
+    dateMaterial.map = null;
+    dateMaterial.color.set(dateColorInput.value);
+  }
+  dateMaterial.needsUpdate = true;
 });
 
 function createTextMeshes(date) {
@@ -82,8 +274,9 @@ function createTextMeshes(date) {
   const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const dateStr = date.toLocaleDateString([], { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 
-  const textMaterial = new THREE.MeshStandardMaterial({ color: 0xe5f6ff, metalness: 0.1, roughness: 0.4 });
-  const dateMaterial = new THREE.MeshStandardMaterial({ color: 0xcfeeff, metalness: 0.05, roughness: 0.6 });
+  // use persistent materials; geometry will be recreated but materials remain
+  const textMaterial = timeMaterial;
+  const dMaterial = dateMaterial;
 
   // time geometry (larger)
   const timeGeo = new TextGeometry(timeStr, {
@@ -120,7 +313,7 @@ function createTextMeshes(date) {
   dateGeo.computeBoundingBox();
   const dateWidth = dateGeo.boundingBox.max.x - dateGeo.boundingBox.min.x;
   dateGeo.translate(-dateWidth / 2, -0.6, 0);
-  dateMesh = new THREE.Mesh(dateGeo, dateMaterial);
+  dateMesh = new THREE.Mesh(dateGeo, dMaterial);
   dateMesh.castShadow = true;
   dateMesh.receiveShadow = true;
   textGroup.add(dateMesh);

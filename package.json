@@ -1,0 +1,44 @@
+{
+  "name": "threejs-electron-clock",
+  "version": "1.0.0",
+  "description": "A portable Electron app showing the current date & time in 3D using Three.js",
+  "main": "main.js",
+  "author": "You",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.example.threejsclock",
+    "productName": "ThreeJS Clock",
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable"
+        }
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    }
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "electron": "^38.3.0",
+    "electron-builder": "^24.0.0"
+  }
+}

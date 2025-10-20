@@ -1,0 +1,32 @@
+/* styles.css */
+html,body {
+  margin: 0;
+  height: 100%;
+  background: #111;
+  color: #ddd;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+#canvas-container {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* simple UI */
+#ui {
+  position: absolute;
+  z-index: 10;
+  top: 12px;
+  left: 12px;
+  gap: 8px;
+  display: flex;
+  align-items: center;
+  background: rgba(18,18,18,0.6);
+  padding: 8px 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+}
+#ui button, #ui label {
+  color: #eee;
+  font-size: 13px;
+}
